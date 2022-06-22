@@ -1,0 +1,76 @@
+Lucas' Theorem
+Statement:
+
+C(N, K) % MOD = (C(n0, k0) * C(n1, k1) * … * C(nm-1, km-1)) % MOD
+n0, n1, … nm-1 and k0, k1, … km-1 are representations of the numbers N and K in the scale of notation with base MOD. In other words:
+N = n0 * MOD0 + n1 * MOD1 + … + nm-1 * MODm-1
+
+K = k0 * MOD0 + k1 * MOD1 + … + km-1 * MODm-1
+
+C(N, K) is Binomial coefficient (number of ways to choose K elements from a set of N elements).
+
+Conditions: MOD is a prime number (look at the end of the article to know what can we do with not prime MOD), and you should be able to calculate C(ni, ki) % MOD, where (0 ≤ ni, ki < MOD).
+
+Advices: this theorem is very useful in case N ≥ MOD, otherwise it's better to use formula C(N, K) = N! / ((N - K)! * K!) and tricks #2 or #3 from there. If N ≥ MOD then N! % MOD = 0, when C(N, K) % MOD is not necessary equals to 0.
+
+Realization: let's see how can we get representation of some number N in the scale of notation with base MOD:
+
+vector<int> getRepresentation(int N) {
+    vector<int> res;
+    while (N > 0) {
+        res.push_back(N % MOD);
+        N /= MOD;
+    }
+    return res;
+}
+Let n will be representation of N and k will be representation of K. They are not necessary have the same length. If K > N we can easily say that C(N, K) = 0. Otherwise k has less or equal length than n. To make them the same length we can add some extra zeroes to k and make them both of length of n, or we can take only some first elements of n and make them both of length of k. The second way has more sense because C(ni, 0) = 1.
+
+So the main part of code looks like:
+
+vector<int> n = getRepresentation(N);
+vector<int> k = getRepresentation(K);        
+long long res = 1;
+for (int i = 0; i < k.size(); ++i) {
+    res = (res * C(n[i], k[i])) % MOD;
+}
+Let's talk about function C(n[i], k[i]) in more detail. It's easy to see that (0 ≤ n[i], k[i] < MOD), so we can use formula C(N, K) = N! / ((N - K)! * K!) and trick #3 from there:
+
+int C(int N, int K) {
+    if (K > N) {
+        return 0;
+    }
+    return (((fact[N] * binpow(fact[N - K], MOD - 2)) % MOD) * binpow(fact[K], MOD - 2)) % MOD;
+}
+Let's precalc all possible factorials modulo MOD and store them in the array fact:
+
+long long fact[MOD];
+fact[0] = 1;
+for (int i = 1; i < MOD; ++i) {
+    fact[i] = (fact[i - 1] * i) % MOD;
+}
+Function binpow is just Fast exponentation, it can calculate AN % MOD in O(log(N)) time:
+
+int binpow(int a, int n) {
+    long long res = 1;
+    while (n > 0) {
+        if (n % 2 != 0) {
+            res = (res * a) % MOD;
+        }
+        a = ((long long)a * a) % MOD;
+        n /= 2;
+    }
+    return (int)res;
+}
+If n[i] and k[i] are small enough instead of using formulas and tricks we can just precalc Pascal's triangle and then get C(n[i], k[i]) in O(1):
+
+int C[MOD][MOD];
+for (int i = 0; i < MOD; ++i) {
+    for (int j = 0; j <= i; ++j) {
+        if (i == 0 || j == 0) {
+            C[i][j] = 1;
+        } else {
+            C[i][j] = (C[i - 1][j - 1] + C[i - 1][j]) % MOD;
+        }
+    }
+}
+Trick with not prime MOD: let's factorize MOD = mod1q1 * mod2q2 * … * modmqm and calculate C(N, K) % mod1, C(N, K) % mod2, … C(N, K) % modm using Lucas' Theorem. Now we can use Chinese remainder theorem to restore C(N, K) % MOD.
